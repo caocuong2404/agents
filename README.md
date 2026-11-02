@@ -1,4 +1,20 @@
-# Agent Starter
+# Shared Agent Platform
+
+Personal-first shared project memory and durable agent work across authenticated clients. The repository currently contains the Cloudflare chat starter; platform capabilities are governed by the architecture baseline and release gates below.
+
+## Project documentation
+
+- [Domain glossary](CONTEXT.md)
+- [Architecture decisions and index](docs/adr/README.md)
+- [Application contracts](docs/adr/contracts.md) and [release gates](docs/adr/validation.md)
+- [Current owner choices](docs/adr/project-decisions.md) and [open baseline questions](docs/adr/open-decisions.md)
+- [Cloudflare reference guide](docs/adr/cloudflare-reference-guide.md) and [original source catalog](docs/adr/references.md)
+- [Platform specification](plans/20261103-0000-shared-agent-platform/shared-agent-platform-spec.md) — [GitHub issue #1](https://github.com/caocuong2404/agents/issues/1)
+- [Engineering workflow configuration](docs/agents/issue-tracker.md)
+
+## Starter application reference
+
+The following sections describe the existing template and its demonstration tools.
 
 ![npm i agents command](./npm-agents-banner.svg)
 

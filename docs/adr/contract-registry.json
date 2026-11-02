@@ -1,0 +1,385 @@
+{
+  "version": "1.1",
+  "calls": [
+    {
+      "name": "authority.inspect",
+      "gate": 0,
+      "mutating": false,
+      "parameters": "scope",
+      "contract": "Current granted identity/policy and an appropriate fence (ControlFence only for an owner); no persistent business mutation."
+    },
+    {
+      "name": "control.configure",
+      "gate": 0,
+      "mutating": true,
+      "parameters": "config_change, fence: ControlFence, idempotency_key",
+      "contract": "Owner control route only; record/policy version compare-and-set."
+    },
+    {
+      "name": "memory.remember",
+      "gate": 1,
+      "mutating": true,
+      "parameters": "scope, content, source, expected_revision?, fence: ScopeFence, idempotency_key",
+      "contract": "Create or supersede Memory atomically; expected_revision required for replacement; return memory_id and record_revision."
+    },
+    {
+      "name": "memory.recall",
+      "gate": 1,
+      "mutating": false,
+      "parameters": "scope, query, limit",
+      "contract": "Only permitted CURRENT records with provenance."
+    },
+    {
+      "name": "memory.read",
+      "gate": 1,
+      "mutating": false,
+      "parameters": "memory_id",
+      "contract": "Authorized record, including authorized historical views."
+    },
+    {
+      "name": "memory.forget",
+      "gate": 1,
+      "mutating": true,
+      "parameters": "memory_id, expected_revision, fence: RecordFence, idempotency_key",
+      "contract": "Reversible tombstone; never unrestricted permanent erasure."
+    },
+    {
+      "name": "task.create",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "objective, acceptance_criteria, scope, fence: ScopeFence, idempotency_key",
+      "contract": "Create ACCEPTED Task and durable admission intent."
+    },
+    {
+      "name": "task.read",
+      "gate": 2,
+      "mutating": false,
+      "parameters": "task_id",
+      "contract": "Current authorized Task state."
+    },
+    {
+      "name": "task.steer",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "task_id, expected_revision, requested_change, fence: RecordFence, idempotency_key",
+      "contract": "Validate owner change, increment task_revision and fence old execution."
+    },
+    {
+      "name": "task.cancel",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "task_id, expected_revision, fence: RecordFence, idempotency_key",
+      "contract": "Record CANCEL_REQUESTED and reconcile; no effect rollback claim."
+    },
+    {
+      "name": "task.review",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "task_id, expected_revision, review_outcome, fence: RecordFence, idempotency_key",
+      "contract": "Authorized reviewer follows matrix, never the proposing worker."
+    },
+    {
+      "name": "task.transition",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "task_id, expected_revision, payload, fence: RecordFence, idempotency_key",
+      "contract": "Internal scheduler/monitor only; matrix actor/guard required, including lease expiry."
+    },
+    {
+      "name": "executor.claim",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "role, capability_set, fence: ScopeFence, idempotency_key",
+      "contract": "Atomic claim of eligible Task; returns Assignment, current task_revision and fence_token: ExecutionFence."
+    },
+    {
+      "name": "executor.heartbeat",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "assignment_id, fence: ExecutionFence, idempotency_key",
+      "contract": "Renew only a current, unexpired lease under policy."
+    },
+    {
+      "name": "executor.checkpoint",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "assignment_id, expected_task_revision, checkpoint, fence: ExecutionFence, idempotency_key",
+      "contract": "Accept only current revision/generation evidence."
+    },
+    {
+      "name": "executor.report",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "assignment_id, expected_task_revision, report, fence: ExecutionFence, idempotency_key",
+      "contract": "Record current progress; submission is not owner acceptance."
+    },
+    {
+      "name": "context.build",
+      "gate": 2,
+      "mutating": false,
+      "parameters": "task_id, token_budget",
+      "contract": "Current authority first, selected permitted evidence next."
+    },
+    {
+      "name": "budget.reserve",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "task_id, payload, fence: RecordFence, idempotency_key",
+      "contract": "Internal budget authority atomically reserves combined ledger capacity."
+    },
+    {
+      "name": "budget.reconcile",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "task_id, payload, fence: RecordFence, idempotency_key",
+      "contract": "Internal budget authority accounts for delayed/uncertain usage."
+    },
+    {
+      "name": "artifact.commit",
+      "gate": 2,
+      "mutating": true,
+      "parameters": "assignment_id, payload, fence: ExecutionFence, idempotency_key",
+      "contract": "Check generation-specific upload digest and authorized retention before accepting reference."
+    },
+    {
+      "name": "recovery.restore",
+      "gate": 1,
+      "mutating": true,
+      "parameters": "restore_manifest, fence: ControlFence, idempotency_key",
+      "contract": "Operator-only inactive restore, fresh epoch and revoked old authority; later entity types remain gate-restricted."
+    },
+    {
+      "name": "operation.propose",
+      "gate": 4,
+      "mutating": true,
+      "parameters": "task_id, expected_revision, operation_descriptor, fence: ExecutionFence, idempotency_key",
+      "contract": "Trusted Task owner mints operation_id on first successful admission; proposal cannot dispatch."
+    },
+    {
+      "name": "operation.dispatch",
+      "gate": 4,
+      "mutating": true,
+      "parameters": "operation_id, fence: RecordFence, execution_fence: ExecutionFence, idempotency_key",
+      "contract": "Internal broker only; its own RecordFence authorizes the actor, and execution_fence proves the current Assignment binding; recheck Task, operation revision, approval and policy."
+    },
+    {
+      "name": "operation.recordOutcome",
+      "gate": 4,
+      "mutating": true,
+      "parameters": "operation_id, payload, fence: RecordFence, idempotency_key",
+      "contract": "Internal broker only; current-epoch receipt recording after dispatch, including UNKNOWN."
+    },
+    {
+      "name": "operation.reconcile",
+      "gate": 4,
+      "mutating": true,
+      "parameters": "operation_id, payload, fence: RecordFence, idempotency_key",
+      "contract": "Internal reconciler may query remote status and record evidence; cannot initiate a new remote write."
+    },
+    {
+      "name": "approval.create",
+      "gate": 4,
+      "mutating": true,
+      "parameters": "operation_id, payload, fence: RecordFence, idempotency_key",
+      "contract": "Internal broker only; create PENDING exact-intent Approval, never self-approve."
+    },
+    {
+      "name": "approval.decide",
+      "gate": 4,
+      "mutating": true,
+      "parameters": "approval_id, payload, fence: RecordFence, idempotency_key",
+      "contract": "Trusted owner route/callback resolves fence server-side after verified binding; model cannot call it."
+    },
+    {
+      "name": "approval.invalidate",
+      "gate": 4,
+      "mutating": true,
+      "parameters": "approval_id, reason, fence: RecordFence, idempotency_key",
+      "contract": "Internal service expires/revokes under current policy; cannot approve."
+    },
+    {
+      "name": "event.ingest",
+      "gate": 5,
+      "mutating": true,
+      "parameters": "source, payload, fence: ScopeFence, idempotency_key",
+      "contract": "Verified source adapter only; source_event_id deduplication also required."
+    }
+  ],
+  "entities": {
+    "Error": 0,
+    "Principal": 0,
+    "WorkspaceGrant": 0,
+    "ExecutorRegistration": 2,
+    "Memory": 1,
+    "Task": 2,
+    "Assignment": 2,
+    "BudgetReservation": 2,
+    "Artifact": 2,
+    "Operation": 4,
+    "Approval": 4,
+    "Event": 5
+  },
+  "fields": {
+    "principal_id": "Verified internal principal identifier; never a caller-selected impersonation.",
+    "principal_kind": "PrincipalKind enum; separates owner, client/bot, executor, webhook and service.",
+    "issuer, subject": "Verified external identity issuer and subject pair; optional for deployment-bound internal identities.",
+    "credential_version": "Revocation/rotation version checked against the authority registry.",
+    "enabled": "Boolean registration/grant switch; false denies use.",
+    "workspace_id": "Permission-domain identifier looked up in the authoritative workspace catalog.",
+    "actions": "Explicit allowlist of application call/capability names; absence denies.",
+    "resource_selectors": "Server-reviewed constraints on resources within a workspace.",
+    "policy_version": "Current authorization configuration revision; a changed version invalidates affected fences.",
+    "executor_id": "Registered executor identifier mapped to exactly its verified principal.",
+    "permitted_classifications": "Subset of Classification allowed by executor registration and policy; EXCLUDED_SENSITIVE never enabled in MVP.",
+    "capability_set, required_capabilities": "Registered/declared capability names and the Assignment-required subset; claim uses their authorized intersection.",
+    "memory_id": "Server-owned Memory record identifier.",
+    "subject_ref": "Scoped subject the learned fact concerns; optional.",
+    "content_or_ref": "Inline permitted content or authorized immutable artifact reference, never executable policy.",
+    "source_ref, source": "Provenance reference or registered source name; cannot grant trust or scope.",
+    "producer_ref, actor_ref, owner_ref": "References to verified producer, observed actor or enrolled human owner; an observed actor is not an authenticated caller.",
+    "schema_version": "Explicit record/interface schema version; incompatible versions rejected.",
+    "record_revision": "Compare-and-set revision of a non-Task record, including grant and ledger records.",
+    "observed_at, received_at": "Observation time and server ingestion time, respectively.",
+    "valid_from, valid_until": "Optional evidence validity interval; not credential or approval validity.",
+    "classification": "Classification enum controlling storage/disclosure.",
+    "trust_class": "TrustClass enum describing provenance authority; independent from classification.",
+    "status": "Closed lifecycle enum for the containing entity, defined below.",
+    "supersedes_ref": "Optional version-bound reference (memory_id plus record_revision) to the earlier Memory replaced by a new CURRENT record.",
+    "task_id": "Server-owned Task identity; distinct from native conversation/session identity.",
+    "objective, acceptance_criteria": "Accepted goal and review conditions controlled by the current task_revision.",
+    "task_revision": "Accepted objective/scope/criteria revision; increments on authorized steering.",
+    "authority_epoch": "Fresh recovery/authorization incarnation; comparisons across epochs are invalid.",
+    "generation": "Execution-ownership counter inside an epoch; increments when ownership is invalidated/transferred.",
+    "mandate_ref": "Versioned authorized task scope and constraints; cannot broaden WorkspaceGrant.",
+    "assignment_ref, assignment_id": "Current Assignment reference and its server-owned identity.",
+    "budget_ref": "Shared BudgetReservation/ledger reference; not independent per-task budget authority.",
+    "evidence_refs": "Permitted supporting artifact, observation and receipt references.",
+    "lease_expires_at": "Server lease deadline; no authority after expiry even with a live connection.",
+    "deadline": "Task/Assignment completion deadline under owner policy; no value invented here.",
+    "context_ref": "Authorized context snapshot reference recording task and source revisions.",
+    "checkpoint_ref": "Durable accepted checkpoint reference; optional until first checkpoint.",
+    "reserved_estimate, actual_usage, uncertain_usage": "Reserved cost estimate, reconciled usage and possibly incurred usage in the ledger; calibrated policy supplies ceilings.",
+    "artifact_id, object_ref": "Server Artifact ID and generation-specific retained object locator.",
+    "digest": "SHA-256 of exact retained bytes, checked on upload/read/restore.",
+    "mime_type, size": "Declared content media type and byte size, checked against content.",
+    "retention_ref": "Owner-approved retention rule reference; unset blocks retained-data reliance.",
+    "operation_id": "Stable logical effect ID minted by the trusted Task owner during first proposal admission.",
+    "capability, resource": "Allowlisted typed effect and constrained destination resource.",
+    "arguments_ref, arguments_hash": "Immutable effect arguments/reference and digest of their canonical content.",
+    "preconditions": "Typed expected destination/task conditions checked before dispatch.",
+    "risk_tier": "RiskTier enum; Tier 2 remains disabled.",
+    "approval_ref, approval_id": "Reference to the single Approval record and its server-owned ID.",
+    "remote_key, remote_receipt": "Provider idempotency key and redacted outcome/query receipt; absence is not evidence of no effect.",
+    "descriptor_hash": "Digest binding operation ID, workspace/task/revision, capability, target, arguments, preconditions, risk and approval expiry.",
+    "issued_at, expires_at": "Server issuance/expiration of Approval or credential; validity checked at use.",
+    "channel_binding": "Verified owner and private-channel binding, including Telegram numeric from.id and chat.id when applicable.",
+    "decision_receipt": "Authenticated decision, decision time and delivery dedupe evidence; no callback secret.",
+    "event_id, source_event_id": "Server observation identity and source-scoped delivery dedupe key.",
+    "thread_refs": "Source conversation/thread references for deterministic routing; no access grant.",
+    "kind": "Registered event schema discriminator; source adapters define payload, not authority.",
+    "content_ref": "Permitted immutable Event payload reference.",
+    "idempotency_key": "Caller-minted stable logical request key under the namespace and payload rules below.",
+    "fence": "Server-issued MutationFence authorizing the verified caller at every mutating call.",
+    "expected_revision": "Requested compare-and-set revision; must equal authoritative record and fence binding.",
+    "expected_task_revision": "Task revision guard; must match both Task and ExecutionFence.",
+    "scope": "Requested workspace plus resource restriction, intersected with verified grants.",
+    "content": "Memory input carrying content_or_ref, classification, trust_class and optional subject_ref/valid_from/valid_until/supersedes_ref; immutable canonical request content for dedupe.",
+    "query, limit": "Authorized recall expression and bounded result limit, subject to configured policy.",
+    "role": "Requested executor role; cannot enlarge registration.",
+    "checkpoint": "Generation-specific durable recovery evidence with references/digests.",
+    "report": "Structured progress/result/evidence submission; never directly marks Task COMPLETED.",
+    "operation_descriptor": "Immutable typed Operation intent as defined above.",
+    "requested_change": "Owner-authorized requested objective/scope/criteria change; validated before revision update.",
+    "review_outcome": "ReviewOutcome enum; criteria acceptance, rework or changed requirements.",
+    "reason": "Closed fence-error reason, or typed audited transition justification; not executable instructions.",
+    "payload": "Validated typed data for the named internal transition; cannot select a different actor.",
+    "restore_manifest": "Authorized schema/scope/revision/receipt/artifact manifest for inactive recovery.",
+    "config_change": "Reviewed control-plane registration/grant/credential/kill-switch change; secrets supplied separately through trusted channels.",
+    "call_name": "Exact application interface name, part of an idempotency namespace.",
+    "token_budget": "Requested context size bound; subject to policy and current reservation.",
+    "fence_token": "Opaque authenticated ExecutionFence handle returned by executor.claim; never synthesized from public IDs.",
+    "guard_ref": "Guard profile used by the Task transition matrix; not a caller-selectable bypass.",
+    "choice": "ApprovalChoice enum in the verified owner decision payload; not agent-supplied authority.",
+    "code": "ErrorCode enum identifying a rejected request; no hidden authorization detail.",
+    "message": "Safe explanatory error text without secrets or unauthorized object metadata.",
+    "retryable": "Boolean indicating whether ordinary automatic retry is appropriate; false for STALE_FENCE.",
+    "recovery": "RecoveryAction enum describing the next authorized recovery step, never permission for a new write.",
+    "execution_fence": "Additional current Assignment ExecutionFence checked by the broker during dispatch; binds the enrolled executor, not the broker service identity."
+  },
+  "enums": {
+    "TaskStatus": [
+      "ACCEPTED",
+      "QUEUED",
+      "RUNNING",
+      "WAITING",
+      "READY_FOR_REVIEW",
+      "BLOCKED",
+      "FAILED",
+      "CANCEL_REQUESTED",
+      "CANCELLED",
+      "COMPLETED"
+    ],
+    "AssignmentStatus": [
+      "PENDING",
+      "RUNNING",
+      "WAITING",
+      "COMPLETED",
+      "FAILED",
+      "CANCEL_REQUESTED",
+      "CANCELLED",
+      "LEASE_EXPIRED",
+      "SUPERSEDED",
+      "REVOKED"
+    ],
+    "ApprovalStatus": ["PENDING", "APPROVED", "REJECTED", "EXPIRED", "REVOKED"],
+    "PrincipalKind": [
+      "OWNER",
+      "CLIENT_BOT",
+      "EXECUTOR",
+      "INBOUND_WEBHOOK",
+      "SERVICE"
+    ],
+    "Classification": ["PUBLIC", "AUTHORIZED_PROJECT", "EXCLUDED_SENSITIVE"],
+    "TrustClass": ["OWNER_INPUT", "SERVICE_RECORD", "UNTRUSTED_CONTENT"],
+    "MemoryStatus": ["CURRENT", "SUPERSEDED", "TOMBSTONED"],
+    "ReviewOutcome": ["ACCEPT", "REWORK", "CHANGE_REQUIREMENTS"],
+    "OperationStatus": [
+      "PROPOSED",
+      "AWAITING_APPROVAL",
+      "DENIED",
+      "DISPATCH_PENDING",
+      "IN_FLIGHT",
+      "SUCCEEDED",
+      "FAILED",
+      "UNKNOWN",
+      "CANCELLED"
+    ],
+    "RiskTier": ["0", "1", "2"],
+    "ApprovalChoice": ["APPROVE", "REJECT"],
+    "ErrorCode": [
+      "AUTHN_REQUIRED",
+      "ACCESS_DENIED",
+      "INCOMPATIBLE_SCHEMA",
+      "STALE_FENCE",
+      "REVISION_CONFLICT",
+      "IDEMPOTENCY_CONFLICT",
+      "INVALID_STATE",
+      "INVALID_ARGUMENT",
+      "APPROVAL_REQUIRED",
+      "APPROVAL_EXPIRED",
+      "KILL_SWITCH_ACTIVE",
+      "RATE_LIMITED"
+    ],
+    "FenceReason": [
+      "EPOCH_MISMATCH",
+      "GENERATION_MISMATCH",
+      "REVISION_MISMATCH",
+      "LEASE_EXPIRED",
+      "ASSIGNMENT_CLOSED",
+      "CREDENTIAL_REVOKED",
+      "POLICY_CHANGED",
+      "SCOPE_MISMATCH"
+    ],
+    "RecoveryAction": ["REFETCH_AND_REAUTHORIZE", "CONTACT_OWNER", "NONE"]
+  }
+}
